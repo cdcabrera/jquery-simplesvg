@@ -1,4 +1,4 @@
-<h1>jQuery.SimplePlaceholder</h1>
+<h1>jQuery.SimpleSVG</h1>
 <p>
     jQuery SVG plugin, meant to display SVG in supported browsers. Unsupported browsers simply
     receive alternate content. Also provided a few methods for adding/removing classes from SVG elements,
