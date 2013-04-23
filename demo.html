@@ -1,102 +1,102 @@
 <!doctype html>
 <html class="" lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<title>SVG NCMap Plugin</title>
-		<style>
-			#simplesvgdisplay       {   height:500px; }
-			#simplesvgdisplay > svg {   width:100%; height:100%; } /* scale your svg to the display container */
+    <head>
+        <meta charset="utf-8" />
+        <title>SVG NCMap Plugin</title>
+        <style>
+            #simplesvgdisplay       {   height:500px; }
+            #simplesvgdisplay > svg {   width:100%; height:100%; } /* scale your svg to the display container */
 
-			.blue                   {   fill:blue; } /* utilize a bit of svg styling */
-			.red                    {   fill:red; }
+            .blue                   {   fill:blue; } /* utilize a bit of svg styling */
+            .red                    {   fill:red; }
 
-			svg path                {  /* sample for CSS transitions, removed Opera transition, didn't work */
-										-webkit-transition:-webkit-transform .2s ease-in-out;
-										-moz-transition: -moz-transform .2s ease-in-out;
-										transition: transform .2s ease-in-out;
-									}
+            svg path                {  /* sample for CSS transitions, removed Opera transition, didn't work */
+                                        -webkit-transition:-webkit-transform .2s ease-in-out;
+                                        -moz-transition: -moz-transform .2s ease-in-out;
+                                        transition: transform .2s ease-in-out;
+                                    }
 
-			svg path:hover          {
-										cursor:pointer;
-										-webkit-transform:scale(1.1);
-										-moz-transform:scale(1.1);
-										transform:scale(1.1);
-									}
+            svg path:hover          {
+                                        cursor:pointer;
+                                        -webkit-transform:scale(1.1);
+                                        -moz-transform:scale(1.1);
+                                        transform:scale(1.1);
+                                    }
 
-		</style>
-	</head>
-	<body>
+        </style>
+    </head>
+    <body>
 
-		<div>
+        <div>
 <!-- Begin Body - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-			<h1>Simple SVG Plugin</h1>
+            <h1>Simple SVG Plugin</h1>
 
-			<div id="simplesvgdisplay">
-				Loading...
-			</div>
+            <div id="simplesvgdisplay">
+                Loading...
+            </div>
 
-		</div>
+        </div>
 
-		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
-		<script src="jquery.simplesvg.js"></script>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+        <script src="jquery.simplesvg.js"></script>
 
-		<script>
+        <script>
 
-			(function($,undefined){
+            (function($,undefined){
 
-				$.simplesvg({
-					display     :   $('#simplesvgdisplay'), //-- where you want to display the svg
-					file        :   'sample.svg',           //-- the svg file
-					selector    :   '#group1 > path',       //-- CSS selector string, select elements within the svg file
-					autoshow    :   false,
-					unsupported :   '<div>Your browser doesnt support svg</div>',
-					event       :   {
-										click : function(e,d) //-- apply a click event to the svg selected element
-										{
-											//-- the "d" parameter contains returned information regarding your svg
-											//debugger;
+                $.simplesvg({
+                    display     :   $('#simplesvgdisplay'), //-- where you want to display the svg
+                    file        :   'sample.svg',           //-- the svg file
+                    selector    :   '#group1 > path',       //-- CSS selector string, select elements within the svg file
+                    autoshow    :   false,
+                    unsupported :   '<div>Your browser doesnt support svg</div>',
+                    event       :   {
+                                        click : function(e,d) //-- apply a click event to the svg selected element
+                                        {
+                                            //-- the "d" parameter contains returned information regarding your svg
+                                            //debugger;
 
-											if( d.methods.hasClass('red') )
-											{
-												d.methods.removeClass('red');
-											}
-											else
-											{
-												d.methods.addClass('red');
-											}
-										},
-										mouseover : function(e,d) //-- apply a mouseover event to the svg selected element
-										{
-											//-- the "d" parameter contains returned information regarding your svg
-											//debugger;
+                                            if( d.methods.hasClass('red') )
+                                            {
+                                                d.methods.removeClass('red');
+                                            }
+                                            else
+                                            {
+                                                d.methods.addClass('red');
+                                            }
+                                        },
+                                        mouseover : function(e,d) //-- apply a mouseover event to the svg selected element
+                                        {
+                                            //-- the "d" parameter contains returned information regarding your svg
+                                            //debugger;
 
-											d.methods.aboveSiblings();  //-- move the layer/path above all the other paths
-											d.methods.centerOrigin();   //-- center the origin point for CSS scale transition
+                                            d.methods.aboveSiblings();  //-- move the layer/path above all the other paths
+                                            d.methods.centerOrigin();   //-- center the origin point for CSS scale transition
 
-											if( d.methods.hasClass('blue') )
-											{
-												d.methods.removeClass('blue');
-											}
-											else
-											{
-												d.methods.addClass('blue');
-											}
-										}
-									},
-					complete    :   function(d)
-									{
-										//-- the "d" parameter contains returned information regarding your svg
-										//debugger;
+                                            if( d.methods.hasClass('blue') )
+                                            {
+                                                d.methods.removeClass('blue');
+                                            }
+                                            else
+                                            {
+                                                d.methods.addClass('blue');
+                                            }
+                                        }
+                                    },
+                    complete    :   function(d)
+                                    {
+                                        //-- the "d" parameter contains returned information regarding your svg
+                                        //debugger;
 
-										setTimeout(function() //-- sample delay to show "on" method
-										{
-											d.methods.on();
-										},1000);
-									}
-				});
+                                        setTimeout(function() //-- sample delay to show "on" method
+                                        {
+                                            d.methods.on();
+                                        },1000);
+                                    }
+                });
 
-			})(jQuery);
-		</script>
+            })(jQuery);
+        </script>
 
-	</body>
+    </body>
 </html>
