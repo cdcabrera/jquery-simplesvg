@@ -16,6 +16,10 @@
     Released under the <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>.
 </p>
 <p>
+    Utilized a regular expression, for replacing classes in a CSS selector, I pulled from <a href="http://stackoverflow.com/">Stack Overflow</a>,
+    but my Google Fu seems a bit off as I can't seem to find it anymore.
+</p>
+<p>
     I did reference Keith Wood's work on his <a href="http://keith-wood.name/svg.html">SVG for jQuery v1.4.5 plugin</a> for what class methods
     to return/allow. His plugin was dual licensed under the GPL and <a href="http://opensource.org/licenses/mit-license.php">MIT License</a>.
 </p>

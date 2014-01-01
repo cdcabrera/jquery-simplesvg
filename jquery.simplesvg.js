@@ -28,10 +28,10 @@
         }, _settings);
 
 
-        _go();
+        Go();
 
         //-- start everything
-        function _go()
+        function Go()
         {
             var objs        = $(_settings.display),
                 file        = _settings.file,
@@ -43,16 +43,16 @@
                 return;
             }
 
-            $.when(_getsvgdata()).then(function(data)
+            $.when(GetSVGData()).then(function(data)
             {
-                _setupcontent(objs, data);
-            }, _error);
+                SetupContent(objs, data);
+            }, Error);
         }
 
 
 
         //-- get data svg or otherwise
-        function _getsvgdata()
+        function GetSVGData()
         {
             var def     = new $.Deferred(),
                 file    = _settings.file;
@@ -78,7 +78,7 @@
 
 
         //-- handle error callback
-        function _error()
+        function Error()
         {
             var error       = _settings.error,
                 supported   = _settings.supported;
@@ -92,11 +92,11 @@
 
 
         //-- setup the display content
-        function _setupcontent( objs, svgdata )
+        function SetupContent( objs, svgdata )
         {
             if( !svgdata )
             {
-                _error();
+                Error();
                 return;
             }
 
@@ -132,19 +132,19 @@
 
                     var altclone        = altdata.clone(true),
                         displayclone    = ( supported )? svgclone : altclone,
-                        methods         = _displaymethods.call( this, jself, displayclone );
+                        methods         = DisplayMethods.call( this, jself, displayclone );
 
                     dataobj.display = (displayclone.length)? displayclone : null;
                     dataobj.alt     = (altclone.length)? altclone : null;
 
                     if( supported && altclone.length )
                     {
-                        _setevents( selector, altclone, dataobj, svgnodes );
+                        SetEvents( selector, altclone, dataobj, svgnodes );
                     }
 
                     if( displayclone.length )
                     {
-                        _setevents( selector, displayclone, dataobj, svgnodes );
+                        SetEvents( selector, displayclone, dataobj, svgnodes );
 
                         if(autoshow)
                         {
@@ -160,32 +160,29 @@
                         supported   : supported
                     });
 
-                }, _error);
+                }, Error);
             });
         }
 
 
 
         //-- attach user defined event object
-        function _setevents( selector, data, dataobj, svgnodes )
+        function SetEvents( selector, data, dataobj, svgnodes )
         {
             var event       = _settings.event,
                 supported   = _settings.supported;
 
-            $.each(event,function(key,value){
+            //-- allows for the use of class selectors instead of attribute selectors when using SVG
+            selector = selector.replace(/\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*\s*)/g,"[class*=$1]");
 
-                //-- decided this was a bad idea and countered the point of the delegated event structure
-                //if(/change/i.test(key)) //-- override event selectors
-                //{
-                    //selector = 'select';
-                //}
+            $.each(event,function(key,value){
 
                 data.on(key, selector, function()
                 {
                     var jself       = $(this),
                         args        = [].concat(Array.prototype.slice.call(arguments)),
-                        methods     = $.extend( true, _classmethods.call(this, jself), _svgmethods.call(this, jself, dataobj) ),
-                        dimensions  = _getCoords.call( this, dataobj.parent ); //this.getBBox(),
+                        methods     = $.extend( true, ClassMethods.call(this, jself), SVGMethods.call(this, jself, dataobj) ),
+                        dimensions  = GetCoords.call( this, dataobj.parent ); //this.getBBox(),
                         attributes  = {};
 
                     $(this.attributes).each(function()
@@ -220,7 +217,7 @@
 
         //-- return the coords relative to the parent...
         //-- based off of how SVG maps coords
-        function _getCoords( container )
+        function GetCoords( container )
         {
             var jself   = $(this),
                 bbox    = ( 'getBBox' in this )? this.getBBox() : null,
@@ -250,12 +247,13 @@
 
 
         //-- additional svg helper methods
-        function _svgmethods( jself, dataobj )
+        function SVGMethods( jself, dataobj )
         {
             var self    = jself.get(0),
                 parent  = jself.parent(),
+                parents = parent.parentsUntil(dataobj.svg),
                 siblings= parent.children().not(self),
-                coords  = _getCoords.call( self, dataobj.parent ); //( 'getBBox' in self )? self.getBBox() : { x:jself.offset().left, y:jself.offset(.top, width:null, height:null },
+                coords  = GetCoords.call( self, dataobj.parent ); //( 'getBBox' in self )? self.getBBox() : { x:jself.offset().left, y:jself.offset(.top, width:null, height:null },
                 centerx = coords.x + (coords.width / 2) + 'px',
                 centery = coords.y + (coords.height / 2) + 'px',
                 xandy   = centerx+' '+centery;
@@ -272,11 +270,27 @@
                 aboveSiblings : function()
                 {
                     parent.prepend( siblings );
+                    parents.each(function()
+                    {
+                        var jself       = $(this),
+                            parent      = jself.parent()
+                            siblings    = parent.children().not(this);
+
+                        parent.prepend(siblings);
+                    });
                 },
 
                 belowSiblings : function()
                 {
                     parent.append( siblings );
+                    parents.each(function()
+                    {
+                        var jself       = $(this),
+                            parent      = jself.parent()
+                            siblings    = parent.children().not(this);
+
+                        parent.append(siblings);
+                    });
                 }
             };
         }
@@ -284,7 +298,7 @@
 
 
         //-- additional class manipulation methods customized for svg
-        function _classmethods( jself )
+        function ClassMethods( jself )
         {
             function addremoveclass( value, remove )
             {
@@ -349,7 +363,7 @@
 
 
         //-- additional onloaded methods
-        function _displaymethods( jself, data )
+        function DisplayMethods( jself, data )
         {
             return {
                 on : function()
