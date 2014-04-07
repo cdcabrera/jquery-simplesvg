@@ -11,47 +11,275 @@
 
 (function(window, $, undefined){
 
+    //-- SVG Plugin methods
+    window.simplesvg = function()
+    {
+        function trimmedobj() //-- take what we need from jquery, shortcut for implmenting svg specific methods
+        {
+            var o = $.apply(this, arguments),
+            tempobj = { selector:o.selector, length:o.length, context:o.context, each:o.each, get:o.get, eq:o.eq, splice:[].splice };
+            o.each(function(i,v){ tempobj[i] = this;});
+            return tempobj;
+        }
+
+        return $.extend(trimmedobj.apply(this,arguments),
+        {
+            addClass : function( value )
+            {
+                return this.each(function()
+                {
+                    if( !simplesvg(this).hasClass(value) )
+                    {
+                        this.setAttribute('class', (this.getAttribute('class')||'') + ' ' + value);
+                    }
+                });
+            },
+
+            removeClass : function( value )
+            {
+                return this.each(function()
+                {
+                    if( simplesvg(this).hasClass(value) )
+                    {
+                        this.setAttribute('class', (this.getAttribute('class')||'').replace(name, ' ').replace(/\s+/gi, '') );
+                    }
+                });
+            },
+
+            hasClass : function( value )
+            {
+                var ret = false;
+                this.each(function()
+                {
+                    var classes = (this.getAttribute('class')||'').replace(/[\t\r\n]/g, ' ').split(/\s+/g);
+                    if(classes.indexOf(value) > -1)
+                    {
+                        ret = true;
+                        return false;
+                    }
+                    return true;
+                });
+                return ret;
+            },
+
+            above : function(isbelow)
+            {
+                return this.each(function()
+                {
+                    var parent      = $(this.parentNode),
+                        parents     = parent.parentsUntil('svg'),
+                        siblings    = parent.children().not(this);
+
+                    if(isbelow)
+                    {
+                        parent.append( siblings );
+                    }
+                    else
+                    {
+                        parent.prepend( siblings );
+                    }
+
+                    parents.each(function()
+                    {
+                        var parent      = $(this.parentNode),
+                            siblings    = parent.children().not(this);
+
+                        if(isbelow)
+                        {
+                            parent.append( siblings );
+                        }
+                        else
+                        {
+                            parent.prepend( siblings );
+                        }
+                    });
+                });
+            },
+
+            below : function()
+            {
+                return this.above(true);
+            },
+
+            centerOrigin : function( container )
+            {
+                var style = this.transformOrigin();
+
+                if(style)
+                {
+                    style = style.split(/\s/);
+                    return {
+                        x: (style[0] || null),
+                        y: (style[1] || null)
+                    };
+                }
+
+                var coords      = this.getInfo( container ),
+                    centerx     = coords.x + (coords.width / 2) + 'px',
+                    centery     = coords.y + (coords.height / 2) + 'px';
+
+                this.transformOrigin(centerx+' '+centery);
+
+                return {x:centerx, y:centery};
+            },
+
+            transformOrigin : function( xy )
+            {
+                var self            = this[0],
+                    vendororigin    = ['transformOrigin','webkitTransformOrigin','MozTransformOrigin','OTransformOrigin','msTransformOrigin'],
+                    temparray       = vendororigin,
+                    returnorigin    = null;
+
+                if(xy)
+                {
+                    return this.each(function()
+                    {
+                        var self = this;
+
+                        while(temparray.length)
+                        {
+                            var p = temparray.shift();
+                            self.style[p] = xy;
+                        }
+                    });
+                }
+                else
+                {
+                    while(temparray.length)
+                    {
+                        var p = temparray.shift();
+
+                        if(p in self.style)
+                        {
+                            returnorigin = self.style[p];
+                            break;
+                        }
+                    }
+                    return returnorigin;
+                }
+            },
+
+            getInfo : function( container )
+            {
+                var self    = this[0],
+                    jself   = $(this[0]),
+                    bbox    = null,
+                    offset  = jself.offset(),
+                    rect    = self.getBoundingClientRect(),
+                    obj     = {},
+                    cx      = self.getAttribute('cx'),
+                    cy      = self.getAttribute('cy'),
+                    altpos,
+                    containerpos;
+
+                try
+                {
+                    obj = self.getBBox();
+                }
+                catch(e)
+                {
+                    altpos = {left: self.offsetLeft, top: self.offsetTop};
+                    container = (!container)? jself.closest('svg').get(0) : simplesvg(container).get(0);
+
+                    if(container)
+                    {
+                        containerpos = {left:container.offsetLeft, top:container.offsetTop};
+                        obj =
+                        {
+                            x       : (altpos.left - containerpos.left),
+                            y       : (altpos.top - containerpos.top),
+                            width   : self.offsetWidth,               //-- avoided using "getBoundingClientRect" on purpose... trying to match how "getBBox" would return coords
+                            height  : self.offsetHeight
+                        };
+                    }
+                }
+
+                $.extend(obj,{
+                    cx:             ((cx && cx.length)? parseFloat(cx) : obj.x + (obj.width/2)),
+                    cy:             ((cy && cy.length)? parseFloat(cy) : obj.y + (obj.height/2)),
+                    node:           self,
+                    currentwidth:   rect.width,
+                    currentheight:  rect.height,
+                    currentx:       offset.left,                        //-- use jQuery's conversion, accounts for "scroll" page height
+                    currenty:       offset.top,
+                    currentcx:      (offset.left + (rect.width/2)),
+                    currentcy:      (offset.top + (rect.height/2))
+                });
+
+                return obj;
+            },
+
+            addSVG : function( value )
+            {
+                return this.each(function()
+                {
+                    $(this).append(simplesvg.makeSVG(value));
+                });
+            }
+        });
+    };
+
+
+    //-- namespaced
+    $.extend(window.simplesvg,
+    {
+        //-- SVG namespaced
+        //-- http://stackoverflow.com/questions/9723422/is-there-some-innerhtml-replacement-in-svg-xml
+        makeSVG: function( value )
+        {
+            var svg = '<svg xmlns="http://www.w3.org/2000/svg">{0}</svg>';
+            return $(svg.replace('{0}',value)).children();
+        },
+
+        supported: ('SVGSVGElement' in window), //-- ('createElementNS' in window.document)
+
+        //-- allowance for use of class selectors instead of attribute selectors when using SVG
+        makeSel: function( value )
+        {
+            return value.replace(/\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*\s*)/g,"[class*=$1]");
+        }
+    });
+
+
+
+    //-- SVG engine
     $.simplesvg = function(_settings)
     {
         _settings = $.extend(true,
         {
-            display         :   null,
+            parent          :   null,
             file            :   null,                                           //-- string: svg file path reference
-            //supported       :   ('createElementNS' in window.document),         //-- boolean: is svg supported, use your own
-            supported       : ('SVGSVGElement' in window),
-            selector        :   null,                                           //-- string or array of strings: selector string or an array of CSS selector strings used to find svg nodes
-            event           :   {},                                             //-- object: object of events applied to the svg as a whole, use the form of {click:function(){}, mouseover:function(){}}
+            supported       :   simplesvg.supported,                            //-- boolean: is svg supported?
+            cssplacement    :   $(document).find('head > title,head > link').last(), //-- DOM element, jQuery element, CSS selector string or function returning the aforementioned: where the SVG css is inserted if it contains any - helps IE
+            events          :   {},                                             //-- object: object of events applied to the svg as a whole, use the form of { 'cssselector' : {click:function(){}, mouseover:function(){}} }
             autoshow        :   true,                                           //-- boolean: plugin automatically appends and shows content, otherwise user appends content using the "complete" callback
             complete        :   null,                                           //-- function: callback for plugin loaded
             unsupported     :   null,                                           //-- DOM element, jQuery element, CSS selector string, html string or function that returns all of the aforementioned: displays alternate content for unsupported browsers. This creates a deep clone and detaches the original element if it exists.
-            error           :   null
+            error           :   null                                            //-- function: svg data loading error
         }, _settings);
 
 
         Go();
 
+
         //-- start everything
         function Go()
         {
-            var objs        = $(_settings.display),
-                file        = _settings.file,
-                selector    = _settings.selector,
-                supported   = _settings.supported;
+            var htmlobjs = $(_settings.parent);
 
-            if( !objs.length || !file || !selector )
+            if( !htmlobjs.length || !_settings.file )
             {
                 return;
             }
 
             $.when(GetSVGData()).then(function(data)
             {
-                SetupContent(objs, data);
+                SetupContent(htmlobjs, data);
             }, Error);
         }
 
 
-
-        //-- get data svg or otherwise
+        //-- get svg data
         function GetSVGData()
         {
             var def     = new $.Deferred(),
@@ -76,8 +304,7 @@
         }
 
 
-
-        //-- handle error callback
+        //-- error callback
         function Error()
         {
             var error       = _settings.error,
@@ -85,14 +312,13 @@
 
             if( $.isFunction(error) )
             {
-                error.call(this,{supported : supported});
+                error.call(this,{data:null, supported:supported});
             }
         }
 
 
-
-        //-- setup the display content
-        function SetupContent( objs, svgdata )
+        //-- setup display content
+        function SetupContent( htmlobjs, svgdata )
         {
             if( !svgdata )
             {
@@ -104,59 +330,51 @@
                 autoshow    = _settings.autoshow,
                 supported   = _settings.supported,
                 unsupported = _settings.unsupported,
-                tempfunc    = ($.isFunction(unsupported))? unsupported : function(){return $(unsupported);},
-                selector    = ($.isArray(_settings.selector))? _settings.selector.join(',') : _settings.selector;
+                tempfunc    = ($.isFunction(unsupported))? unsupported : function(){return $(unsupported);};
 
-            objs.each(function()
+
+            htmlobjs.each(function()
             {
                 var self            = this,
-                    jself           = $(this),
                     svgclone        = svgdata.clone(true),
-                    svgnodes        = svgclone.find(selector),
+                    nodes           = GetSVGNodes.call(svgclone.get(0)),
                     dataobj         = {
                                         parent  : self,
                                         display : null,
-                                        svg     : svgclone,
+                                        svg     : svgclone.get(0),
                                         alt     : null
                                       };
 
-                //-- call unsupported here so we can pass back svg information
-                //-- to be used for alternate purposes
-                $.when(tempfunc.call(this, {data:dataobj, nodes:svgnodes, supported:supported})).then(function(data)
+                //-- call unsupported pass back svg information
+                $.when(tempfunc.call(this, {data:dataobj, nodes:nodes, supported:supported})).then(function(data)
                 {
-                    var altdata = $('<div/>').append($(data)).children(); //-- byproduct, if exists remove visibility
+                    var altDisplayData  = $(data).clone(true),
+                        newDisplayData  = ( supported )? svgclone : altDisplayData,
+                        nodes           = GetSVGNodes.call(svgclone.get(0));
 
-                    //altdata.each(function(){ //-- remove the id for cloning //-- forget that, they can figure it out...
-                        //$(this).removeAttr('id');
-                    //});
+                    dataobj.display = (newDisplayData.length)? newDisplayData.get(0) : null;
+                    dataobj.alt     = (altDisplayData.length)? altDisplayData.get(0) : null;
 
-                    var altclone        = altdata.clone(true),
-                        displayclone    = ( supported )? svgclone : altclone,
-                        methods         = DisplayMethods.call( this, jself, displayclone );
+                    SetEvents( dataobj.parent, dataobj );
 
-                    dataobj.display = (displayclone.length)? displayclone : null;
-                    dataobj.alt     = (altclone.length)? altclone : null;
-
-                    if( supported && altclone.length )
+                    if(supported)
                     {
-                        SetEvents( selector, altclone, dataobj, svgnodes );
+                        SetCSS( newDisplayData );
                     }
 
-                    if( displayclone.length )
+                    if(!autoshow)
                     {
-                        SetEvents( selector, displayclone, dataobj, svgnodes );
-
-                        if(autoshow)
-                        {
-                            jself.html( displayclone );
-                        }
+                        newDisplayData.hide();
                     }
+
+                    $(self).html( newDisplayData );
+
+
 
                     complete.call(self,
                     {
                         data        : dataobj,
-                        methods     : methods,
-                        nodes       : svgnodes,
+                        nodes       : nodes,
                         supported   : supported
                     });
 
@@ -165,224 +383,97 @@
         }
 
 
+        //-- pass nodes to unsupported content
+        function GetSVGNodes()
+        {
+            var svg     = $(this),
+                events  = (_settings.events||{}),
+                nodes   = [];
+
+            if($.isEmptyObject(events))
+            {
+                nodes = $.makeArray(svg.find('*'));
+            }
+            else
+            {
+                $.each(events,function(key,value)
+                {
+                    var selector= simplesvg.makeSel(key);
+                    nodes = nodes.concat( $.makeArray( svg.find(selector) ) );
+                });
+            }
+
+            return  nodes;
+        }
+
 
         //-- attach user defined event object
-        function SetEvents( selector, data, dataobj, svgnodes )
+        function SetEvents( displaydata, dataobj )
         {
-            var event       = _settings.event,
+            var parent      = $(displaydata),
+                events      = (_settings.events||{}),
                 supported   = _settings.supported;
 
-            //-- allows for the use of class selectors instead of attribute selectors when using SVG
-            selector = selector.replace(/\.(-?[_a-zA-Z]+[_a-zA-Z0-9-]*\s*)/g,"[class*=$1]");
+            $.each(events,function(key,value)
+            {
+                var selector= simplesvg.makeSel(key);
 
-            $.each(event,function(key,value){
-
-                data.on(key, selector, function()
+                $.each(value, function(subkey,subvalue)
                 {
-                    var jself       = $(this),
-                        args        = [].concat(Array.prototype.slice.call(arguments)),
-                        methods     = $.extend( true, ClassMethods.call(this, jself), SVGMethods.call(this, jself, dataobj) ),
-                        dimensions  = GetCoords.call( this, dataobj.parent ); //this.getBBox(),
-                        attributes  = {};
-
-                    $(this.attributes).each(function()
+                    parent.on(subkey, selector, function()
                     {
-                        attributes[this.nodeName] = this.nodeValue;
+                        var self        = this,
+                            args        = [].concat(Array.prototype.slice.call(arguments));
+
+                        args.push({
+                            data:       dataobj,
+                            selector:   selector,
+                            nodes:      $.makeArray( $(dataobj.svg).find(selector) ),
+                            supported:  supported,
+                            element:    (supported)? simplesvg(self).getInfo() : self
+                        });
+
+                        subvalue.apply(self, args);
                     });
-
-                    dimensions =
-                    {
-                        width:dimensions.width,
-                        height:dimensions.height,
-                        x:dimensions.x,
-                        y:dimensions.y
-                    };
-
-                    args.push({
-                        data        : dataobj,
-                        dimensions  : dimensions,
-                        attributes  : attributes,
-                        nodes       : svgnodes,
-                        methods     : methods,
-                        supported   : supported
-                    });
-
-                    value.apply(this, args);
                 });
-
             });
         }
 
 
-
-        //-- return the coords relative to the parent...
-        //-- based off of how SVG maps coords
-        function GetCoords( container )
+        //-- reorganize css, since we do it for IE do it for everybody...
+        function SetCSS( element )
         {
-            var jself   = $(this),
-                bbox    = ( 'getBBox' in this )? this.getBBox() : null,
-                obj     = {},
-                altpos,
-                containerpos;
+            var cssplacement = $.isFunction(_settings.cssplacement) ? _settings.cssplacement : function(){return $(_settings.cssplacement);},
+                svgstyle     = $(element).find('style'),
+                tempprevious = null;
 
-            if( bbox )
+            cssplacement = cssplacement.call(this);
+
+            svgstyle.each(function(i,v)
             {
-                obj = bbox;
-            }
-            else
-            {
-                altpos = jself.offset();
-                containerpos = $(container).offset();
+                var newstyle = $('<style type="text/css"/>'),
+                    contents = $(this).contents();
 
-                obj.x = altpos.left - containerpos.left;
-                obj.y = altpos.top - containerpos.top;
-                obj.width = jself.outerWidth(true);     //-- didnt use "getBoundingClientRect" on purpose... trying to match how "getBBox" would return coords
-                obj.height = jself.outerHeight(true);
-            }
-
-            return obj;
-        }
-
-
-
-
-        //-- additional svg helper methods
-        function SVGMethods( jself, dataobj )
-        {
-            var self    = jself.get(0),
-                parent  = jself.parent(),
-                parents = parent.parentsUntil(dataobj.svg),
-                siblings= parent.children().not(self),
-                coords  = GetCoords.call( self, dataobj.parent ); //( 'getBBox' in self )? self.getBBox() : { x:jself.offset().left, y:jself.offset(.top, width:null, height:null },
-                centerx = coords.x + (coords.width / 2) + 'px',
-                centery = coords.y + (coords.height / 2) + 'px',
-                xandy   = centerx+' '+centery;
-
-
-            return {
-                centerOrigin : function()
+                if(i>0)
                 {
-                    self.style.msTransformOrigin = self.style.OTransformOrigin = self.style.MozTransformOrigin = self.style.webkitTransformOrigin = self.style.transformOrigin = xandy;
-
-                    return {x:centerx, y:centery};
-                },
-
-                aboveSiblings : function()
-                {
-                    parent.prepend( siblings );
-                    parents.each(function()
-                    {
-                        var jself       = $(this),
-                            parent      = jself.parent()
-                            siblings    = parent.children().not(this);
-
-                        parent.prepend(siblings);
-                    });
-                },
-
-                belowSiblings : function()
-                {
-                    parent.append( siblings );
-                    parents.each(function()
-                    {
-                        var jself       = $(this),
-                            parent      = jself.parent()
-                            siblings    = parent.children().not(this);
-
-                        parent.append(siblings);
-                    });
-                }
-            };
-        }
-
-
-
-        //-- additional class manipulation methods customized for svg
-        function ClassMethods( jself )
-        {
-            function addremoveclass( value, remove )
-            {
-                var self            = jself.get(0),
-                    valuefunc       = ( $.isFunction( value ) )? value : function(i,v){ return value; },
-                    currentclasses  = ( jself.attr('class') || '' ),
-                    returnedclases  = valuefunc.call( self, 0, currentclasses ),
-                    classarray      = ($.trim(currentclasses)).replace(/\s+/g,' ').split( /\s+/ ),
-                    testarray       = ($.trim(returnedclases)).replace(/\s+/g,' ').split( /\s+/ ),
-                    newarray        = [];
-
-                if( remove )
-                {
-                    $.each(classarray, function(index,value)
-                    {
-                        if( $.inArray( value, testarray ) < 0 )
-                        {
-                            newarray.push( value );
-                        }
-                    });
+                    $(tempprevious).after(newstyle);
                 }
                 else
                 {
-                    newarray = classarray;
-
-                    $.each(testarray, function(index,value)
-                    {
-                        if( $.inArray( value, classarray ) < 0 )
-                        {
-                            newarray.push( value );
-                        }
-                    });
+                    $(cssplacement[0]).after(newstyle);
                 }
 
-                return jself.attr('class', newarray.join(' '));
-            }
-
-
-
-            return {
-                addClass : function( value )
+                if( 'styleSheet' in newstyle[0] ) //-- ie you fantastic browser you...
                 {
-                    return addremoveclass( value, false );
-                },
-
-
-                removeClass : function( value )
-                {
-                    return addremoveclass( value, true );
-                },
-
-
-                hasClass : function( value )
-                {
-                    var current = ( jself.attr('class') || '' ).replace(/[\t\r\n]/g, ' ');
-                    return ( (' ' + current + ' ').indexOf( ' ' + value + ' ' ) > -1 );
+                    newstyle[0].styleSheet.cssText = contents.text();
                 }
-            };
-        }
-
-
-
-
-        //-- additional onloaded methods
-        function DisplayMethods( jself, data )
-        {
-            return {
-                on : function()
+                else
                 {
-                    if( data.length )
-                    {
-                        $(data).detach(); //-- double check to avoid overwritting
-                        jself.html( data );
-                    }
-                },
-
-                off : function()
-                {
-                    if( data.length )
-                    {
-                        $(data).detach();
-                    }
+                    newstyle.html(contents);
                 }
-            };
+
+                tempprevious = newstyle;
+            });
         }
     };
 
