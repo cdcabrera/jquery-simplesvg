@@ -45,52 +45,55 @@
             (function($,undefined){
 
                 $.simplesvg({
-                    display     :   $('#simplesvgdisplay'), //-- where you want to display the svg
+                    parent      :   $('#simplesvgdisplay'), //-- where you want to display the svg
                     file        :   'sample.svg',           //-- the svg file
-                    selector    :   '#group1 > path',       //-- CSS selector string, select elements within the svg file
                     autoshow    :   false,
                     unsupported :   '<div>Your browser doesnt support svg</div>',
-                    event       :   {
-                                        click : function(e,d) //-- apply a click event to the svg selected element
-                                        {
-                                            //-- the "d" parameter contains returned information regarding your svg
-                                            //debugger;
+                    events      :   {
+                                        '#group1 > path':   {
+                                                                click : function(e,d) //-- apply a click event to the svg selected element
+                                                                {
+                                                                    var svgelement = simplesvg(this);
 
-                                            if( d.methods.hasClass('red') )
-                                            {
-                                                d.methods.removeClass('red');
-                                            }
-                                            else
-                                            {
-                                                d.methods.addClass('red');
-                                            }
-                                        },
-                                        mouseover : function(e,d) //-- apply a mouseover event to the svg selected element
-                                        {
-                                            //-- the "d" parameter contains returned information regarding your svg
-                                            //debugger;
+                                                                    console.log(this);
 
-                                            d.methods.aboveSiblings();  //-- move the layer/path above all the other paths
-                                            d.methods.centerOrigin();   //-- center the origin point for CSS scale transition
+                                                                    if(svgelement.hasClass('red'))
+                                                                    {
+                                                                        svgelement.removeClass('red');
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        svgelement.addClass('red');
+                                                                    }
+                                                                },
 
-                                            if( d.methods.hasClass('blue') )
-                                            {
-                                                d.methods.removeClass('blue');
-                                            }
-                                            else
-                                            {
-                                                d.methods.addClass('blue');
-                                            }
-                                        }
+                                                                mouseover : function(e,d) //-- apply a mouseover event to the svg selected element
+                                                                {
+                                                                    var svgelement = simplesvg(this);
+
+                                                                    console.log(this);
+
+                                                                    svgelement.above().centerOrigin();
+
+                                                                    if(svgelement.hasClass('blue'))
+                                                                    {
+                                                                        svgelement.removeClass('blue');
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        svgelement.addClass('blue');
+                                                                    }
+                                                                }
+                                                            }
                                     },
                     complete    :   function(d)
                                     {
                                         //-- the "d" parameter contains returned information regarding your svg
-                                        //debugger;
+                                        console.log(d);
 
                                         setTimeout(function() //-- sample delay to show "on" method
                                         {
-                                            d.methods.on();
+                                            $(d.data.display).show();
                                         },1000);
                                     }
                 });
